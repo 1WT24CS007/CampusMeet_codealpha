@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CampusChat</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7f8;
+            color: #263238;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            background: #2b8a7a;
+            color: white;
+            padding: 18px 7%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .brand {
+            font-size: 25px;
+            font-weight: bold;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .back-button,
+        .logout-button {
+            text-decoration: none;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.18);
+            color: white;
+        }
+
+        .logout-button {
+            background: white;
+            color: #2b8a7a;
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 800px;
+            margin: 35px auto;
+            padding: 0 20px;
+        }
+
+        /* CHAT CARD */
+        .chat-card {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
+        }
+
+        .chat-header {
+            margin-bottom: 20px;
+        }
+
+        .chat-header h2 {
+            margin: 0;
+            color: #204f48;
+        }
+
+        .online-status {
+            margin-top: 6px;
+            color: #2b8a7a;
+            font-size: 14px;
+        }
+
+        /* MESSAGES */
+        #messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e5e5;
+            border-radius: 14px;
+            padding: 15px;
+            margin-bottom: 18px;
+            background: #f8faf9;
+
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            padding: 11px 15px;
+            margin-top: 10px;
+            max-width: 72%;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .my-message {
+            align-self: flex-end;
+            background: #2b8a7a;
+            color: white;
+            border-radius: 14px 14px 3px 14px;
+        }
+
+        .other-message {
+            align-self: flex-start;
+            background: #e5f3ef;
+            color: #263238;
+            border-radius: 14px 14px 14px 3px;
+        }
+
+        .message strong {
+            font-size: 13px;
+        }
+
+        /* INPUT */
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 13px 15px;
+            border: 1px solid #ccd6d4;
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        #messageInput:focus {
+            border-color: #2b8a7a;
+        }
+
+        #sendButton {
+            background: #2b8a7a;
+            color: white;
+            border: none;
+            padding: 13px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #sendButton:hover {
+            background: #226f63;
+        }
+
+        /* EMPTY HOME */
+        .home-text {
+            color: #667777;
+            line-height: 1.6;
+        }
+
+        .find-people {
+            display: inline-block;
+            background: #2b8a7a;
+            color: white;
+            text-decoration: none;
+            padding: 12px 20px;
+            border-radius: 9px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* MOBILE */
+        @media (max-width: 600px) {
+
+            .navbar {
+                padding: 16px 20px;
+            }
+
+            .brand {
+                font-size: 21px;
+            }
+
+            .container {
+                margin-top: 25px;
+                padding: 0 12px;
+            }
+
+            .chat-card {
+                padding: 18px;
+            }
+
+            #messages {
+                height: 350px;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+
+            .input-area {
+                flex-direction: column;
+            }
+
+            #sendButton {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <header class="navbar">
+
+        <div class="brand">
+            💬 CampusChat
+        </div>
+
+        <div class="nav-buttons">
+
+            {% if other_user %}
+                <a href="/users/" class="back-button">
+                    ← People
+                </a>
+            {% endif %}
+
+            <form action="/logout/" method="post">
+                {% csrf_token %}
+                <button class="logout-button" type="submit">
+                    Logout
+                </button>
+            </form>
+
+        </div>
+
+    </header>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="container">
+
+        <div class="chat-card">
+
+            {% if other_user %}
+
+                <div class="chat-header">
+
+                    <h2>
+                        Chat with {{ other_user.username }}
+                    </h2>
+
+                    <div class="online-status">
+                        🟢 Real-time conversation
+                    </div>
+
+                </div>
+
+
+                <!-- MESSAGES -->
+                <div id="messages">
+
+                    {% for message in messages %}
+
+                        <div class="message {% if message.sender == request.user %}my-message{% else %}other-message{% endif %}">
+
+                            <strong>
+                                {{ message.sender.username }}
+                            </strong>
+
+                            <br>
+
+                            {{ message.message }}
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- MESSAGE INPUT -->
+                <div class="input-area">
+
+                    <input
+                        type="text"
+                        id="messageInput"
+                        placeholder="Type your message..."
+                        autocomplete="off"
+                    >
+
+                    <button id="sendButton">
+                        Send
+                    </button>
+
+                </div>
+
+
+            {% else %}
+
+                <div class="chat-header">
+
+                    <h2>
+                        Welcome, {{ request.user.username }} 👋
+                    </h2>
+
+                </div>
+
+                <p class="home-text">
+                    Select someone from the people page to start a
+                    real-time private conversation.
+                </p>
+
+                <a href="/users/" class="find-people">
+                    Find People
+                </a>
+
+            {% endif %}
+
+        </div>
+
+    </main>
+
+
+    <!-- WEBSOCKET CODE -->
+    <script>
+
+    {% if other_user %}
+
+    const protocol =
+        window.location.protocol === "https:" ? "wss://" : "ws://";
+
+    const chatSocket = new WebSocket(
+        protocol +
+        window.location.host +
+        "/ws/chat/{{ other_user.id }}/"
+    );
+
+
+    chatSocket.onopen = function() {
+
+        console.log("WebSocket connected!");
+
+    };
+
+
+    chatSocket.onmessage = function(event) {
+
+        const data = JSON.parse(event.data);
+
+        const message = document.createElement("div");
+
+        message.classList.add("message");
+
+        const currentUser =
+            "{{ request.user.username }}";
+
+
+        if (data.username === currentUser) {
+
+            message.classList.add("my-message");
+
+        } else {
+
+            message.classList.add("other-message");
+
+        }
+
+
+        message.innerHTML =
+            "<strong>" +
+            data.username +
+            "</strong><br>" +
+            data.message;
+
+
+        document
+            .getElementById("messages")
+            .appendChild(message);
+
+
+        document.getElementById("messages").scrollTop =
+            document.getElementById("messages").scrollHeight;
+
+    };
+
+
+    chatSocket.onerror = function(error) {
+
+        console.log("WebSocket error:", error);
+
+    };
+
+
+    chatSocket.onclose = function() {
+
+        console.log("WebSocket disconnected.");
+
+    };
+
+
+    document.getElementById("sendButton").onclick =
+        function() {
+
+            const input =
+                document.getElementById("messageInput");
+
+            const message =
+                input.value.trim();
+
+
+            if (
+                message !== "" &&
+                chatSocket.readyState === WebSocket.OPEN
+            ) {
+
+                chatSocket.send(
+                    JSON.stringify({
+                        message: message
+                    })
+                );
+
+                input.value = "";
+
+            }
+
+        };
+
+
+    document
+        .getElementById("messageInput")
+        .addEventListener(
+            "keypress",
+            function(event) {
+
+                if (event.key === "Enter") {
+
+                    document
+                        .getElementById("sendButton")
+                        .click();
+
+                }
+
+            }
+        );
+
+    {% endif %}
+
+    </script>
+
+</body>
+</html>
